@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Eats | Hostel Mess Reservation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons for aesthetic icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Configure Tailwind with custom colors/font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neats-primary': '#10b981', // Emerald Green
+                        'neats-secondary': '#fbbf24', // Amber Yellow
+                        'neats-bg': '#f3f4f6', // Light Gray
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    keyframes: {
+                        pop: {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.05)' },
+                        },
+                        flash: {
+                            '0%': { backgroundColor: '#10b98150' },
+                            '100%': { backgroundColor: 'white' },
+                        }
+                    },
+                    animation: {
+                        pop: 'pop 0.3s ease-in-out',
+                        flash: 'flash 0.5s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- --- CUSTOM STYLES (LOGICAL CSS SEPARATION) --- -->
+    <style>
+        /* Custom Scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Subtle Aesthetic Background */
+        body {
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px);
+            background-size: 10px 10px;
+        }
+
+        /* Active navigation button styling */
+        .active-tab {
+            background-color: var(--tw-colors-neats-primary);
+            color: white;
+            box-shadow: 0 6px 10px -3px rgba(16, 185, 129, 0.4);
+            transform: scale(1.02);
+        }
+        .nav-button:hover:not(.active-tab) {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-neats-bg font-sans min-h-screen flex flex-col">
+
+    <!-- Main Application Container -->
+    <div id="app" class="flex-grow flex flex-col md:flex-row max-w-7xl mx-auto w-full p-0 md:p-4">
+
+        <!-- Sidebar / Mobile Navigation -->
+        <nav id="sidebar" class="bg-white shadow-xl md:rounded-3xl md:w-64 flex flex-row md:flex-col justify-around md:justify-start p-2 md:p-6 mb-4 md:mb-0 md:mr-4 fixed bottom-0 left-0 w-full z-10 md:static md:bottom-auto">
+            <h1 class="hidden md:block text-3xl font-black text-neats-primary mb-8 border-b-2 border-neats-secondary pb-3 tracking-wider whitespace-nowrap">🍜 N-Eats</h1>
+
+            <!-- Navigation Links -->
+            <ul class="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-3 w-full">
+                <li class="w-1/4 md:w-full">
+                    <button data-tab="home" class="nav-button flex items-center justify-center md:justify-start w-full p-3 rounded-xl transition-all duration-300 text-gray-600 hover:bg-neats-secondary/20 active-tab">
+                        <i data-lucide="home" class="w-6 h-6 mr-0 md:mr-3"></i>
+                        <span class="text-xs md:text-base font-semibold hidden md:block">Home</span>
+                    </button>
+                </li>
+                <li class="w-1/4 md:w-full">
+                    <button data-tab="menu" class="nav-button flex items-center justify-center md:justify-start w-full p-3 rounded-xl transition-all duration-300 text-gray-600 hover:bg-neats-secondary/20">
+                        <i data-lucide="utensils" class="w-6 h-6 mr-0 md:mr-3"></i>
+                        <span class="text-xs md:text-base font-semibold hidden md:block">Food Menu</span>
+                    </button>
+                </li>
+                <li class="w-1/4 md:w-full">
+                    <button data-tab="reserve" class="nav-button flex items-center justify-center md:justify-start w-full p-3 rounded-xl transition-all duration-300 text-gray-600 hover:bg-neats-secondary/20">
+                        <i data-lucide="ticket" class="w-6 h-6 mr-0 md:mr-3"></i>
+                        <span class="text-xs md:text-base font-semibold hidden md:block">Reserve</span>
+                    </button>
+                </li>
+                <li class="w-1/4 md:w-full">
+                    <button data-tab="user-info" class="nav-button flex items-center justify-center md:justify-start w-full p-3 rounded-xl transition-all duration-300 text-gray-600 hover:bg-neats-secondary/20">
+                        <i data-lucide="user" class="w-6 h-6 mr-0 md:mr-3"></i>
+                        <span class="text-xs md:text-base font-semibold hidden md:block">User Info</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="content-area" class="flex-grow bg-white shadow-xl md:rounded-3xl p-4 md:p-10 mt-16 md:mt-0 mb-20 md:mb-0 overflow-y-auto">
+            <!-- Loading and Error State -->
+            <div id="loading-spinner" class="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-20 hidden md:rounded-3xl">
+                <div class="flex flex-col items-center">
+                    <!-- Animated Chef Hat for fun loading -->
+                    <i data-lucide="chef-hat" class="w-16 h-16 text-neats-primary animate-bounce"></i>
+                    <p class="mt-4 text-neats-primary font-semibold animate-pulse">Whipping up your N-Eats...</p>
+                </div>
+            </div>
+            <div id="error-message" class="text-center text-red-500 font-medium py-4 hidden"></div>
+
+            <!-- HOME Tab -->
+            <section id="home-tab" class="tab-content">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-neats-primary mb-6 animate-pop">😋 Eat Smart, Not Hard!</h2>
+                <p class="text-xl text-gray-600 mb-10 border-l-4 border-neats-secondary pl-4 font-medium">Your simple, delicious, and friendly mess reservation system.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Feature Card 1: Elevated aesthetic -->
+                    <div class="bg-neats-secondary/10 p-6 rounded-2xl shadow-lg border-t-8 border-neats-secondary transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] hover:rotate-1">
+                        <i data-lucide="scan" class="w-10 h-10 text-neats-secondary mb-3"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Scan & Go</h3>
+                        <p class="text-gray-600">Reserve your meal with one tap and get a unique ticket code for fast access.</p>
+                    </div>
+
+                    <!-- Feature Card 2 -->
+                    <div class="bg-neats-primary/10 p-6 rounded-2xl shadow-lg border-t-8 border-neats-primary transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] hover:-rotate-1">
+                        <i data-lucide="award" class="w-10 h-10 text-neats-primary mb-3"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Zero Waste</h3>
+                        <p class="text-gray-600">Help the mess reduce food waste by only booking what you plan to eat.</p>
+                    </div>
+
+                    <!-- Feature Card 3 -->
+                    <div class="bg-gray-100 p-6 rounded-2xl shadow-lg border-t-8 border-gray-400 transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] hover:translate-y-[-5px]">
+                        <i data-lucide="chef-hat" class="w-10 h-10 text-gray-500 mb-3"></i>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Chef's Special</h3>
+                        <p class="text-gray-600">Always check the menu for special items before making your final decision!</p>
+                    </div>
+                </div>
+
+                <div class="mt-12 p-8 bg-neats-primary text-white rounded-3xl shadow-2xl flex items-start space-x-4 border-4 border-neats-secondary animate-pop">
+                    <i data-lucide="alert-triangle" class="w-8 h-8 flex-shrink-0"></i>
+                    <div>
+                        <h3 class="text-2xl font-bold mb-3">Reservation Deadline Notice</h3>
+                        <p class="text-lg">Reservations close at **11 AM** for Lunch and **8 PM** for Dinner. Don't miss out!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- USER INFO Tab -->
+            <section id="user-info-tab" class="tab-content hidden">
+                <h2 class="text-4xl font-bold text-neats-primary mb-8 border-b-4 border-neats-secondary pb-3">My Identity and Details</h2>
+
+                <div class="bg-neats-secondary/10 p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
+                    <div class="space-y-1">
+                        <p class="text-lg font-semibold text-gray-700">Your Unique Mess ID:</p>
+                        <p id="user-id-display" class="text-3xl md:text-4xl font-mono font-extrabold text-neats-primary break-all bg-white px-3 py-1 rounded-lg">Loading...</p>
+                    </div>
+                    <button id="copy-btn" onclick="copyUserId()" class="flex items-center p-3 bg-neats-primary text-white rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110 active:bg-neats-secondary">
+                        <i data-lucide="copy" class="w-5 h-5 mr-2"></i> Copy ID
+                    </button>
+                </div>
+
+                <div class="mt-10 p-6 bg-gray-50 rounded-2xl shadow-md border-l-4 border-gray-400">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3 flex items-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 mr-2 text-neats-primary"></i> Account Status
+                    </h3>
+                    <p class="text-gray-600">You are securely logged in. This unique ID ensures only you can claim your reservations.</p>
+                </div>
+            </section>
+
+            <!-- FOOD MENU Tab -->
+            <section id="menu-tab" class="tab-content hidden">
+                <h2 class="text-4xl font-bold text-neats-primary mb-8 border-b-4 border-neats-secondary pb-3">🍽️ Today's Delicious Menu!</h2>
+                <div id="menu-container" class="space-y-6">
+                    <!-- Menu items will be injected here by JS -->
+                    <p class="text-center text-gray-500 p-8 bg-gray-100 rounded-xl shadow-inner">Fetching today's meals...</p>
+                </div>
+                <div class="mt-10 text-center p-5 bg-neats-secondary/20 rounded-2xl shadow-inner">
+                    <p class="text-neats-secondary font-semibold flex items-center justify-center text-lg">
+                        <i data-lucide="sparkles" class="w-6 h-6 mr-2"></i>
+                        Special of the day: Everything is made with love!
+                    </p>
+                </div>
+            </section>
+
+            <!-- RESERVE Tab -->
+            <section id="reserve-tab" class="tab-content hidden">
+                <h2 class="text-4xl font-bold text-neats-primary mb-8 border-b-4 border-neats-secondary pb-3">🎟️ Reserve Your Meal Ticket</h2>
+
+                <!-- Reservation Form Section -->
+                <div class="bg-neats-primary/10 p-6 rounded-3xl shadow-2xl mb-10">
+                    <h3 class="text-2xl font-semibold text-neats-primary mb-5 flex items-center">
+                        <i data-lucide="shopping-cart" class="w-6 h-6 mr-2"></i> Ready to Book?
+                    </h3>
+                    <div id="reservation-options" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <p class="text-gray-600 col-span-3">Menu options loading...</p>
+                        <!-- Reservation cards will be injected here -->
+                    </div>
+                    <div id="reserve-message" class="mt-4 text-center font-medium text-sm"></div>
+                </div>
+
+                <!-- Active Reservations Section -->
+                <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center">
+                    <i data-lucide="check-circle" class="w-6 h-6 mr-2 text-neats-primary"></i> Your Active Reservations
+                </h3>
+                <div id="active-reservations-container" class="space-y-4">
+                    <p class="text-gray-500 text-center p-4 bg-gray-50 rounded-xl border-dashed border-2">No active reservations found for today. Get reserving!</p>
+                </div>
+            </section>
+
+            <!-- Custom Modal for Messages (replaces alert/confirm) -->
+            <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center hidden p-4 transition-opacity duration-300">
+                <div id="modal-content" class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full transform transition-all duration-200 border-t-8 border-neats-primary scale-0">
+                    <h4 id="modal-title" class="text-2xl font-bold text-neats-primary mb-3"></h4>
+                    <p id="modal-body" class="text-gray-700 mb-6"></p>
+                    <button id="modal-close-btn" class="w-full bg-neats-primary text-white font-semibold py-3 rounded-xl hover:bg-neats-primary/80 transition-colors shadow-lg hover:shadow-xl hover:scale-[1.01]">Close</button>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- --- JAVASCRIPT LOGIC (LOGICAL JS SEPARATION) --- -->
+    <script type="module">
+        // Import only what is necessary for the local fallback logic
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, serverTimestamp, runTransaction, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Variables (Mandatory Canvas/Runtime variables)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // --- FIX START: Handle missing config by providing a null check ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- FIX END ---
+        
+        // --- LOCAL FALLBACK DATA (For VS Code/Offline use) ---
+        const defaultMeals = [
+            { id: 'b1', type: 'Breakfast', item: 'Aloo Paratha & Curd', price: 40, icon: 'coffee' },
+            { id: 'l1', type: 'Lunch', item: 'Rajma Chawal, Raita', price: 70, icon: 'sun' },
+            { id: 'd1', type: 'Dinner', item: 'Veg Biryani, Gulab Jamun', price: 100, icon: 'moon' }
+        ];
+        let localReservations = {}; // Local state for reservations
+        let localUserId = 'VSCODE-DEV-USER'; // Fixed user ID for local mode
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+        let isLocalMode = false; // New flag for local mode
+
+        // setLogLevel('debug'); // Disable debug logging by default in production code, enable only when needed
+
+        // Utility to display custom modal message with animation
+        const showModal = (title, body) => {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = body;
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            
+            modal.classList.remove('hidden');
+            // Trigger animation
+            setTimeout(() => content.classList.replace('scale-0', 'scale-100'), 10);
+        };
+        document.getElementById('modal-close-btn').onclick = () => {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+
+            content.classList.replace('scale-100', 'scale-0');
+            // Hide modal after animation completes
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        };
+
+        // --- CORE FIREBASE INITIALIZATION AND AUTHENTICATION ---
+        const initFirebase = async () => {
+            document.getElementById('loading-spinner').classList.remove('hidden');
+            
+            if (!firebaseConfig) {
+                // --- FIX START: Local/VS Code Mode Fallback ---
+                console.warn("Firebase configuration missing. Starting in LOCAL DEVELOPMENT MODE.");
+                isLocalMode = true;
+                userId = localUserId;
+                isAuthReady = true;
+                document.getElementById('user-id-display').textContent = userId + ' (LOCAL)';
+                
+                // Initialize local UI with default data
+                currentMenuMeals = defaultMeals;
+                renderMenu(currentMenuMeals);
+                renderReservationOptions(currentMenuMeals, []);
+                renderActiveReservations([]);
+                
+                document.getElementById('loading-spinner').classList.add('hidden');
+                document.getElementById('error-message').textContent = 'Running in Local Mode. Data is NOT persistent.';
+                document.getElementById('error-message').classList.remove('hidden');
+                
+                return; // Exit initialization
+                // --- FIX END ---
+            }
+
+            // --- Original Firebase Initialization (only runs if config exists) ---
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                await setPersistence(auth, browserLocalPersistence).catch((error) => {
+                    console.error("Persistence setup failed, proceeding without it:", error);
+                });
+
+                // 1. Initial Authentication Logic
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken).catch(e => {
+                        console.warn("Custom token sign-in failed, falling back to anonymous.", e);
+                        return signInAnonymously(auth);
+                    });
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // 2. Auth State Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        document.getElementById('user-id-display').textContent = userId;
+                        console.log("User authenticated. ID:", userId);
+
+                        // Start data listeners only after auth is confirmed
+                        setupMenuListener();
+                        setupReservationsListener();
+                    } else {
+                        console.log("No user signed in.");
+                        userId = null;
+                        isAuthReady = false;
+                        document.getElementById('user-id-display').textContent = 'Not Authenticated';
+                    }
+                    document.getElementById('loading-spinner').classList.add('hidden');
+                });
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                showModal("Setup Failed", "Could not initialize the application. Check console for details.");
+                document.getElementById('loading-spinner').classList.add('hidden');
+            }
+        };
+
+
+        // --- FIRESTORE / LOCAL UTILITIES ---
+
+        // Get today's date in YYYY-MM-DD format for document IDs
+        const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+        // Public Data Path for Menu (Only used in Firebase mode)
+        const getMenuDocRef = () => doc(db, 'artifacts', appId, 'public', 'data', 'n_eats_menu', getTodayDate());
+
+        // Private Data Path for User Reservations (Only used in Firebase mode)
+        const getReservationsCollectionRef = () => collection(db, 'artifacts', appId, 'users', userId, 'n_eats_reservations');
+
+        // --- DATA LISTENERS ---
+
+        // Listen for the daily menu
+        let currentMenuMeals = []; // Store current meals globally for price lookup
+        const setupMenuListener = () => {
+            if (isLocalMode) return; // Skip in local mode, using hardcoded data
+            
+            const menuRef = getMenuDocRef();
+            onSnapshot(menuRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    currentMenuMeals = docSnap.data().meals;
+                    renderMenu(currentMenuMeals);
+                    // Rerender reservation options when menu changes
+                    if (userId) { 
+                         const reservationsQuery = query(getReservationsCollectionRef(), where('reservationDate', '==', getTodayDate()));
+                         onSnapshot(reservationsQuery, (snapshot) => {
+                            const reservations = [];
+                            snapshot.forEach((doc) => reservations.push(doc.data()));
+                            renderReservationOptions(currentMenuMeals, reservations);
+                         });
+                    } else {
+                        renderReservationOptions(currentMenuMeals, []);
+                    }
+                } else {
+                    console.log("No menu found for today. Creating a default one...");
+                    createDefaultMenu();
+                    currentMenuMeals = [];
+                    renderMenu([]);
+                    renderReservationOptions([], []);
+                }
+            }, (error) => {
+                console.error("Error fetching menu:", error);
+                showModal("Data Error", "Failed to load the daily menu. Please try refreshing.");
+            });
+        };
+
+        // Listen for user's active reservations
+        const setupReservationsListener = () => {
+            if (isLocalMode || !userId) return; // Skip in local mode
+
+            const reservationsQuery = query(getReservationsCollectionRef(), where('reservationDate', '==', getTodayDate()));
+            onSnapshot(reservationsQuery, (querySnapshot) => {
+                const reservations = [];
+                querySnapshot.forEach((doc) => {
+                    reservations.push({ id: doc.id, ...doc.data() });
+                });
+                renderActiveReservations(reservations);
+                // Also update the options section if the menu is loaded
+                if (currentMenuMeals.length > 0) {
+                    renderReservationOptions(currentMenuMeals, reservations);
+                }
+            }, (error) => {
+                console.error("Error fetching reservations:", error);
+                // Fail silently
+            });
+        };
+
+        // --- DATA CREATION/UPDATE FUNCTIONS ---
+
+        // Create a default menu document if today's menu is missing (Only used in Firebase mode)
+        const createDefaultMenu = async () => {
+            const menuData = {
+                date: getTodayDate(),
+                meals: defaultMeals,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await setDoc(getMenuDocRef(), menuData);
+                console.log("Default menu created successfully.");
+            } catch (e) {
+                console.error("Error creating default menu:", e);
+                showModal("Creation Failed", "Could not set up the default menu. Reservations may not work.");
+            }
+        };
+
+        // Handle the reservation button click
+        window.handleReservation = async (mealId, mealType) => {
+            if (!isAuthReady) {
+                showModal("Authentication Required", "Please wait for authentication to complete before making a reservation.");
+                return;
+            }
+
+            const cardElement = document.getElementById(`card-${mealId}`);
+            
+            // --- FIX START: Reservation logic switch for local vs firebase ---
+            if (isLocalMode) {
+                const today = getTodayDate();
+                if (!localReservations[today]) localReservations[today] = {};
+                
+                let isCancelling = localReservations[today][mealId] && localReservations[today][mealId].isReserved;
+                
+                if (isCancelling) {
+                    localReservations[today][mealId] = { isReserved: false };
+                    showModal("Reservation Canceled (LOCAL)", `Successfully canceled your ticket for **${mealType}**. (Not saved)`);
+                } else {
+                    localReservations[today][mealId] = { isReserved: true, mealId, mealType, reservationDate: today, timestamp: new Date() };
+                    showModal("Reservation Success (LOCAL)!", `You have successfully reserved your ticket for **${mealType}**. (Not saved)`);
+                }
+
+                // Simulate data update
+                const reservationsArray = Object.values(localReservations[today] || {});
+                renderActiveReservations(reservationsArray);
+                renderReservationOptions(currentMenuMeals, reservationsArray);
+                
+            } else {
+                // Original Firebase Transaction Logic
+                const reservationRef = doc(getReservationsCollectionRef(), mealId);
+                
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const docSnap = await transaction.get(reservationRef);
+                        let isCancelling = docSnap.exists() && docSnap.data().isReserved;
+
+                        if (isCancelling) {
+                            transaction.update(reservationRef, {
+                                isReserved: false,
+                                reservationDate: getTodayDate(),
+                                timestamp: serverTimestamp()
+                            });
+                            showModal("Reservation Canceled", `Successfully canceled your ticket for **${mealType}**.`);
+                        } else {
+                            transaction.set(reservationRef, {
+                                mealId: mealId,
+                                mealType: mealType,
+                                reservationDate: getTodayDate(),
+                                isReserved: true,
+                                timestamp: serverTimestamp()
+                            });
+                            showModal("Reservation Success!", `You have successfully reserved your ticket for **${mealType}**.`);
+                        }
+                    });
+                } catch (e) {
+                    console.error("Reservation transaction failed:", e);
+                    showModal("Reservation Failed", "An error occurred while processing your request. Please try again.");
+                }
+            }
+            // --- FIX END ---
+
+            // Visual feedback: pulse the card
+            if (cardElement) {
+                cardElement.classList.add('animate-pop');
+                setTimeout(() => cardElement.classList.remove('animate-pop'), 300);
+            }
+        };
+
+
+        // --- UI RENDERING FUNCTIONS ---
+
+        // Renders the full menu in the Food Menu tab
+        const renderMenu = (meals) => {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = '';
+
+            if (meals.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 p-8 bg-gray-100 rounded-xl shadow-inner">No menu published for today yet. Check back soon!</p>';
+                return;
+            }
+
+            const mealIcons = {
+                'Breakfast': 'coffee',
+                'Lunch': 'sun',
+                'Dinner': 'moon'
+            };
+
+            meals.forEach(meal => {
+                const iconName = mealIcons[meal.type] || 'utensils';
+                const mealCard = `
+                    <div class="flex items-center bg-white p-4 md:p-6 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl border-l-8 border-neats-secondary hover:border-neats-primary hover:scale-[1.01]">
+                        <i data-lucide="${iconName}" class="w-8 h-8 text-neats-primary mr-4 md:mr-6 flex-shrink-0 animate-pulse"></i>
+                        <div class="flex-grow">
+                            <h3 class="text-xl md:text-2xl font-bold text-gray-800">${meal.type}</h3>
+                            <p class="text-gray-600">${meal.item}</p>
+                        </div>
+                        <span class="text-lg font-extrabold text-neats-secondary bg-neats-secondary/20 px-4 py-2 rounded-full flex-shrink-0 border-2 border-neats-secondary">
+                            ₹${meal.price}
+                        </span>
+                    </div>
+                `;
+                container.innerHTML += mealCard;
+            });
+            lucide.createIcons();
+        };
+
+        // Renders the reservation cards in the Reserve tab (requires reservation data to show state)
+        const renderReservationOptions = (meals, reservations) => {
+            const container = document.getElementById('reservation-options');
+            container.innerHTML = '';
+
+            if (meals.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 col-span-3">No menu available to reserve from.</p>';
+                return;
+            }
+
+            const reservedMealIds = new Set(
+                reservations.filter(r => r.isReserved && (isLocalMode ? true : r.reservationDate === getTodayDate())).map(r => r.mealId)
+            );
+
+            meals.forEach(meal => {
+                const isReserved = reservedMealIds.has(meal.id);
+                const buttonId = `reserve-btn-${meal.id}`;
+
+                const buttonClass = isReserved
+                    ? 'bg-red-500 hover:bg-red-600 shadow-red-300/50'
+                    : 'bg-neats-primary hover:bg-neats-primary/80 shadow-neats-primary/50';
+                const buttonText = isReserved
+                    ? 'CANCEL Reservation'
+                    : `Reserve (₹${meal.price})`;
+                const cardBorder = isReserved
+                    ? 'border-neats-primary shadow-2xl scale-[1.02]'
+                    : 'border-neats-secondary shadow-lg hover:shadow-xl hover:scale-[1.01]';
+
+                const card = `
+                    <div id="card-${meal.id}" class="reservation-card bg-white p-4 rounded-xl transition-all duration-300 border-t-8 ${cardBorder}">
+                        <h4 class="text-xl font-bold text-gray-800 mb-1">${meal.type}</h4>
+                        <p class="text-sm text-gray-600 mb-3">${meal.item}</p>
+                        <button id="${buttonId}" onclick="handleReservation('${meal.id}', '${meal.type}')" class="w-full text-white font-semibold py-2 rounded-lg transition-all duration-200 shadow-md ${buttonClass} hover:translate-y-[-1px] active:translate-y-[1px]">
+                            ${buttonText}
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        };
+
+        // Renders the user's active reservations
+        const renderActiveReservations = (reservations) => {
+            const container = document.getElementById('active-reservations-container');
+            container.innerHTML = '';
+            // In local mode, we assume all localReservations are for "today" for simplicity
+            const activeReservations = isLocalMode 
+                ? reservations.filter(r => r.isReserved)
+                : reservations.filter(r => r.isReserved && r.reservationDate === getTodayDate());
+
+            if (activeReservations.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center p-4 bg-gray-50 rounded-xl border-dashed border-2">No active reservations found for today. Get reserving!</p>';
+                return;
+            }
+
+            activeReservations.forEach(reservation => {
+                // Find the corresponding meal details (item name, price)
+                const mealDetail = currentMenuMeals.find(m => m.id === reservation.mealId);
+                const mealItem = mealDetail ? mealDetail.item : 'Meal Item Unknown';
+                const mealPrice = mealDetail ? `(${mealDetail.price})` : '';
+                
+                // Use current Date object or convert Firestore timestamp
+                const bookingTime = isLocalMode 
+                    ? new Date(reservation.timestamp).toLocaleTimeString()
+                    : new Date(reservation.timestamp.toDate()).toLocaleTimeString();
+
+                const ticket = `
+                    <div class="bg-white p-5 rounded-xl shadow-lg border-l-8 border-neats-primary flex items-center justify-between transition-shadow hover:shadow-xl hover:scale-[1.01]">
+                        <div class="flex flex-col">
+                            <h4 class="text-xl font-bold text-neats-primary flex items-center">
+                                <i data-lucide="ticket" class="w-5 h-5 mr-2"></i>
+                                ${reservation.mealType} Ticket
+                            </h4>
+                            <p class="text-gray-700 font-medium ml-7">${mealItem} <span class="text-neats-secondary">${mealPrice}</span></p>
+                            <p class="text-gray-500 text-xs ml-7 mt-1">Booked: ${bookingTime}</p>
+                        </div>
+                        <span class="text-neats-primary font-extrabold text-2xl bg-neats-primary/10 p-3 rounded-full flex-shrink-0 animate-pop">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </span>
+                    </div>
+                `;
+                container.innerHTML += ticket;
+            });
+            lucide.createIcons();
+        };
+
+        // --- NAVIGATION LOGIC ---
+        const tabs = document.querySelectorAll('.tab-content');
+        const navButtons = document.querySelectorAll('.nav-button');
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+
+                // 1. Hide all tabs and deactivate all buttons
+                tabs.forEach(tab => tab.classList.add('hidden'));
+                navButtons.forEach(btn => btn.classList.remove('active-tab'));
+                navButtons.forEach(btn => btn.classList.add('text-gray-600', 'hover:bg-neats-secondary/20'));
+                
+                // Add a quick visual pulse to the button
+                button.classList.add('animate-pop');
+                setTimeout(() => button.classList.remove('animate-pop'), 300);
+
+                // 2. Show the target tab and activate the current button
+                document
+                .getElementById(`${targetTab}-tab`).classList.remove('hidden');
+                button.classList.add('active-tab');
+                button.classList.remove('text-gray-600', 'hover:bg-neats-secondary/20');
+
+                // 3. Re-render icons on tab switch
+                lucide.createIcons();
+            });
+        });
+
+        // Initialize Home tab as active on load
+        document.querySelector('.nav-button[data-tab="home"]').click();
+
+        // --- CLIPBOARD FUNCTIONALITY ---
+        window.copyUserId = () => {
+            const userIdText = document.getElementById('user-id-display').textContent;
+            const copyBtn = document.getElementById('copy-btn');
+            
+            if (userIdText && userIdText !== 'Loading...' && userIdText !== 'Not Authenticated') {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = userIdText;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                try {
+                    document.execCommand('copy');
+                    showModal("Copied!", `Your unique **User ID** (${isLocalMode ? 'LOCAL' : 'CLOUD'}) has been copied to the clipboard.`);
+
+                    // Visual feedback on copy button
+                    copyBtn.classList.add('animate-pop', 'bg-neats-secondary');
+                    setTimeout(() => {
+                        copyBtn.classList.remove('animate-pop', 'bg-neats-secondary');
+                        copyBtn.classList.add('bg-neats-primary');
+                    }, 300);
+
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    showModal("Copy Failed", "Could not copy the ID. Please copy manually.");
+                }
+                document.body.removeChild(tempInput);
+            } else {
+                showModal("Wait a moment", "The User ID is not yet ready to be copied.");
+            }
+        };
+
+        // Initialization
+        window.onload = () => {
+             initFirebase();
+             lucide.createIcons();
+        }
+
+    </script>
+</body>
+</html>
